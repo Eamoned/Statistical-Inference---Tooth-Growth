@@ -1,0 +1,181 @@
+---
+title: "Statistical Inference and Tooth Growth"
+author: "Eamon Corr"
+date: "Monday, January 11, 2016"
+output: html_document
+---
+
+##ToothGrowth Data Analysis
+#####Analysis of tooth growth by supplement and dosage using confidence intervals and hypothesis tests. 
+
+####Loading & Data Processing
+Load the dataset ToothGrowth from the R package datasets and check the first few rows.
+
+```{r load data}
+library(dplyr)
+library(datasets)
+data(ToothGrowth)
+head(ToothGrowth,3)
+```
+
+Checking the dataset's dimensions, variables and charcteristics:
+
+```{r data check}
+str(ToothGrowth)
+unique(ToothGrowth$supp)
+unique(ToothGrowth$dose)
+summary(ToothGrowth)
+
+```
+This quick check reveals the variable (factor) 'supp' with two levels, 'OJ' and 'VC'. The dose variable has three unique values of 0.5, 1, and 2. The 'len' (tooth length) has a median of 19.25 and a range from 4.2 to 33.90.
+
+The data is organised firstly by 'supp' and then dose with equal quantities for each. There's no NA's.
+
+```{r exploratory analyses1}
+summary(ToothGrowth$len)
+any(is.na(ToothGrowth$len))
+table(ToothGrowth$dose)
+table(ToothGrowth$supp)
+```
+The dataset comes with no supporting information regarding the experiment/trial prerequisites, conditions, variable names and observations. Therefore we will make the following assumptions:
+
+'supp' is short for supplement and the supplements include 'OJ', possibly Orange Juice and 'VC'. The dose (0.5, 1, 2) is a measure of vitamin C and the units are milligrams (mg).
+
+#### Some Exploratory Data Analysis
+Let's look at the dosage comparison across all supplements for tooth length (growth), means and standard deviations for all groups. 
+
+```{r explorartory analyses2}
+par(mfrow = c(1,1), oma= c(0,0,2,0))
+boxplot(len ~ dose, data=ToothGrowth, xlab='Dosage (mg)', ylab='Tooth length', main='Dosage Comparison')
+mtext('Fig.1: Dosage Comparison Across All Supplements', outer = TRUE)
+a <- group_by(ToothGrowth, supp,dose)
+summarise(a, mean(len), round(sd(len),2))
+```
+
+In general we can see a step increase in tooth growth as dosage increases across all measurements.
+
+Looking at the data in more detail (Fig.2 below) we can see a clear increase in tooth length as dosage is increased for supplement VC. However, supplement OJ is a little less clearer. There's a lot more overlap between the three dosages particularly dosage 1 and 2. Supplement OJ seems to be more effective for lower doses but seems to be on par with VC at the higher level dosage. We'll do a little more analysis on supplement OJ when we investigate the confidence intervals later. 
+
+```{r explorartory analyses3}
+vc <- subset(ToothGrowth, ToothGrowth$supp == 'VC')
+oj <- subset(ToothGrowth, ToothGrowth$supp == 'OJ')
+#to scale the plots so that they are on the same range
+#we calcualte the range of the dataset for both
+rng <- range(vc$len, oj$len, na.rm=T)
+par(mfrow = c(1,2), oma= c(0,0,2,0))
+boxplot(len ~ dose, data=vc, ylim = rng, xlab='Dose (mg)', ylab='Tooth length', main='Supplement VC')
+boxplot(len ~ dose, data=oj, ylim = rng, xlab='Dose (mg)', ylab='Tooth length', main='Supplement OJ')
+mtext('Fig.2: Supplement & Dosage Comparison', outer = TRUE)
+```
+
+
+### Confidence Intervals and Hypothesis Testing to Compare Tooth Growth by Supplement & Dosage.
+
+#####Assumptions
+Before carrying out further analysis we will make the following assumptions.
+There's no evidence that the dataset consists of paired observations, i.e. no id variable 
+to indicate remeasurement of the units.
+We will assume the variance is not equal. Looking at the boxplots in Fig.1 we can see variations in density across dosage levels across supplements and within supplements. Therefore we will assume the variance are not equal. 
+All calculations will be carried out using the 95% confidence interval. 
+
+Note: If the data was treated as paired, intervals may be different and may not include zero.
+It's also likely we will get different intervals when considering variances to be equal or unequal. 
+
+#####Confidence Intervals & Hypothesis Testing.
+Just a quick note on confidence intervals and hypothesis testing. 95% refers to the fact that if one were to repeatably get samples of size n, about 95% of the intervals would contain mu, the parameter we're trying to estimate.
+If an interval contains zero we cannot rule out zero as the possibility for the population difference between the two groups.
+
+
+#####Determine confidence intervals and hypothesis test to compare supplements for tooth growth across both supplements VC and OJ in general.
+
+Hypothesis Test: Ho: µ(oj) = µ(vc); H1: µ(oj) != µ(vc)
+
+```{r confidence interval 1}
+vc <- ToothGrowth$len[1:30]
+oj <- ToothGrowth$len[31:60]
+t.test(oj,vc, paired=FALSE, var.equal = FALSE)
+```
+P-value = 0.06063
+Therefore do not reject the null hypothesis, i.e. there is  no statistical difference between the two supplements (means of tooth growth) overall. 
+The confidence interval also contains zero.
+We should note that the p-value is not large and from out exploratory data analysis we know there are differences (Fig.2) when we break the data down further and analysis dosage and tooth growth.
+
+
+#####Determine confidence intervals and hypothesis test to compare supplements for tooth growth for dosage = 0.5mg
+
+Hypothesis Test: Ho: µ(oj_0.5) = µ(vc_0.5) ; H1: µ(oj_0.5) != µ(vc_0.5)
+
+```{r confidence interval 2}
+vc_0.5 <- ToothGrowth$len[1:10]
+oj_0.5 <- ToothGrowth$len[31:40]
+t.test(oj_0.5,vc_0.5, paired=FALSE, var.equal = FALSE)
+```
+P-value = 0.006359 indicating there is a significant difference between the two 
+supplements for a dosage of 0.5mg.
+The confidence interval does not contain zero.
+Therefore we can reject the null hypothesis and accept the alternative that the two supplements (means of tooth growth) are not equal.
+
+#####Determine Confidence intervals and hypothesis test to compare supplements for tooth growth for dosage = 1mg.
+
+Hypothesis Test: Ho: µ(oj_1.0) = µ(vc_1.0) ; H1: µ(oj_1.0) != µ(vc_1.0)
+
+```{r confidence interval 3}
+vc_1.0 <- ToothGrowth$len[11:20]
+oj_1.0 <- ToothGrowth$len[41:50]
+t.test(oj_1.0,vc_1.0, paired=FALSE, var.equal = FALSE)
+```
+P-value = 0.001038 indicating there is a significant difference between the two 
+supplements for a dosage of 1mg.
+The confidence interval does not contain zero.
+Therefore we can reject the null hypothesis and accept the alternative that the two supplements (means of tooth growth) are not equal.
+
+#####Determine Confidence intervals and hypothesis test to compare supplements for tooth growth for dosage = 2mg.
+
+Hypothesis Test: Ho: µ(oj_2.0) = µ(vc_2.0) : H1: µ(oj_2.0) != µ(vc_2.0)
+
+```{r confidence interval 4}
+vc_2.0 <- ToothGrowth$len[21:30]
+oj_2.0 <- ToothGrowth$len[51:60]
+t.test(oj_2.0,vc_2.0, paired=FALSE, var.equal = FALSE)
+```
+P-value = 0.9639 indicating there is not a significant difference between the two 
+supplements for a dosage of 2mg.
+The confidence interval does contain zero.
+Therefore we cannot reject the null hypothesis and the two supplements (means of tooth growth) are equal.
+
+#####Determine Confidence intervals and hypothesis test for supplement OJ for tooth growth for dosage 0.5mg and 1mg.
+
+During the exploratory data analysis we discussed overlap between the three dosages particularly dosage 1 and 2 for supplement OJ.
+We will analyse this further using confidence intervals and hypothesis testing. 
+
+Hypothesis Test: Ho: µ(oj_0.5) = µ(oj_1.0) ; H1: µ(oj_0.5) != µ(vc_1.0)
+
+```{r confidence interval 5}
+t.test(oj_1.0,oj_0.5, paired=FALSE, var.equal = FALSE)
+```
+P-value = 8.785e-05 confirms our believe there is a significant difference between the two doses for supplement OJ.
+The confidence interval does not contain zero.
+Therefore we can reject the null hypothesis and confirm there is a difference between the 0.5mg and the higher 1mg dosage.
+
+#####Comparing tooth growth for dosage 1mg and 2mg for the OJ supplement.
+
+Hypothesis Test: Ho: µ(oj_1) = µ(oj_2) ; H1: µ(oj_1) != µ(vc_2)
+
+```{r confidence interval 6}
+t.test(oj_1.0,oj_2.0, paired=FALSE, var.equal = FALSE)
+```
+P-value = 0.0392 indicating there is a significant difference between the 1gm and 2gm 
+doses for supplement OJ.
+The confidence interval does not contain zero.
+Therefore we can reject the null hypothesis and confirm there is a difference between the 1mg and the higher 2mg dosage.
+
+###Conclusions
+
+From this analysis We can conclude that in general, increases in vitamin C dosages for supplements OJ and VC, will have a positive effect on the growth of tooth length.
+
+Dosages of 0.5mg and 1mg will result in larger tooth growth for supplement OJ than for supplement VC.
+
+However, a dosage of 2mg will have a similar impact on tooth growth for both supplements.
+
+
+
