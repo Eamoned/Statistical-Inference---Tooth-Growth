@@ -1,4 +1,4 @@
-# Statistical-Inference-Tooth-Growth
+# Statistical Inference-Tooth-Growth
 
 This reproducible project was completed as part of the "Statistical Inference" certificate and part of the John Hopkins Data Science Specialisation.
 
